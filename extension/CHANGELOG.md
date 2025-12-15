@@ -5,16 +5,30 @@ All notable changes to the AL Object ID Ninja extension will be documented in th
 The log is kept in [Keep a Changelog](http://keepachangelog.com/) format. This project follows
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [3.0.0] - 2024-12-XX
 
-Work is in progress on two upcoming features, both of which heavily depend on tree view refactoring done in 2.9.0:
+### Changed
 
--   License Explorer: allows you to have better insight into licensed state of your objects. It allows to have
-    multiple active licenses and to see license report for all of them independently.
--   Managed app pools: allows you to create app pools with full control of apps included in them. Existing unmanaged
-    pools allow anyone who knows the pool ID to join their app into a pool. Managed pools allow you to control who
-    can join the pool, you can remove apps from pool centrally, and you can make sure that only apps that are actually
-    a part of the pool to assign object IDs to that pool.
+-   Migration to v3 API endpoints. The v3 endpoints are simplified and follow a more natural REST design, making them
+    more accurate in terms of what they do. The new endpoints collect a bit more information about apps and users, which
+    helps drive detailed usage statistics in the web management portal.
+-   Activity logging and usage tracking system for organization accounts. This system helps organizations and administrators
+    make better informed decisions about the size of their subscription and provides statistics and insights into how their
+    organization and team uses Ninja and handles object ID assignment. Activity logs are stored securely and are only
+    accessible to organization administrators. This information is never used for AI training or any other purposes.
+-   Improved AL parser that is much faster and more reliable, with better resilience to edge cases with AL syntax. The
+    parser now handles unusual or "funky" AL syntax more gracefully, reducing parsing errors and improving the overall
+    reliability of object ID detection and synchronization.
+-   AL Object ID Ninja has transitioned from a free public service to a commercial Software-as-a-Service (SaaS) platform.
+    Until January 1, 2026, the SaaS service is not billed and is free of charge to allow organizations to migrate either
+    to self-hosted deployment or to set up their subscription for the SaaS platform. After this date, organizations using
+    the public endpoints will need either a free personal subscription or a paid subscription. Organizations can also choose
+    to deploy and maintain their own backend infrastructure at no subscription cost.
+
+### Fixed
+
+-   Back-end performance and reliability improvements through deeper test coverage, making it easier to catch bugs and ensure
+    reliability across all operations.
 
 ## [2.12.0] - 2023-09-10
 

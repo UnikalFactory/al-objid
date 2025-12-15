@@ -8,3 +8,4 @@ export * from "./v3/getConsumption";
 export * from "./v3/getNext";
 export * from "./v3/storeAssignment";
 export * from "./v3/syncIds";
+export * from "./v3/touch";

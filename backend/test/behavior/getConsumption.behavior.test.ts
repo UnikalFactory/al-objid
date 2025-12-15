@@ -41,7 +41,7 @@ describe("Testing function api/v2/getConsumption (behavioral validation)", () =>
             params: { appId: body.appId || "test-app-id" },
             headers: {
                 get: jest.fn().mockImplementation((name: string) => {
-                    if (name === "X-Auth-Key") return body.authKey || null;
+                    if (name === "Ninja-Auth-Key") return body.authKey || null;
                     return null;
                 }),
             },

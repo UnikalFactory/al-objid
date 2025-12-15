@@ -1,6 +1,7 @@
 import { Disposable, window } from "vscode";
 import { ALApp } from "../../../lib/ALApp";
 import { WorkspaceManager } from "../../WorkspaceManager";
+import { Backend } from "../../../lib/backend/Backend";
 import { AppAwareNode } from "../AppAwareNode";
 import { DecorableNode } from "../DecorableNode";
 import { Decoration } from "../Decoration";
@@ -49,6 +50,12 @@ export class AssignmentExplorerView extends NinjaTreeView {
         this._rootNodesInitialized = true;
 
         let apps = WorkspaceManager.instance.alApps;
+
+        // Send touch request for all active apps (fire-and-forget)
+        // This runs in background and doesn't block tree rendering
+        Backend.touch(apps, "explorer")
+            .catch(err => console.error("Touch request failed:", err));
+
         if (apps.length === 0) {
             return [new TextNode("No AL workspaces are open.", "There is nothing to show here.")];
         }

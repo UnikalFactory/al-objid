@@ -9,6 +9,9 @@ import { performValidation } from "./validate";
 import { bindSingleApp, bindMultiApp, bindSingleAppOptional, bindMultiAppOptional } from "./bindApp";
 import { bindUser } from "./bindUser";
 import { AppInfo } from "../types";
+import { PermissionCheckSymbol } from "../permission/withPermissionCheck";
+import { bindPermission, enforcePermission, getPermissionWarning } from "../permission/bindPermission";
+import { isPrivateBackend } from "../utils/privateBackend";
 
 export async function handleRequest<TRequest = any, TResponse = any, TParams = any>(
     handler: AzureHttpHandler<TRequest, TResponse>,
@@ -47,6 +50,12 @@ export async function handleRequest<TRequest = any, TResponse = any, TParams = a
         // Bind user info from headers (automatic for all requests)
         bindUser(azureRequest);
 
+        // Permission check if handler requires it (skip in private backend mode)
+        if (handler[PermissionCheckSymbol] && !isPrivateBackend()) {
+            await bindPermission(azureRequest);
+            enforcePermission(azureRequest);
+        }
+
         // Bind app data if handler requires it (mandatory binding)
         if (handler[SingleAppHttpRequestSymbol]) {
             const skipAuth = !!handler[SkipAuthorizationSymbol];
@@ -75,6 +84,14 @@ export async function handleRequest<TRequest = any, TResponse = any, TParams = a
             // Strip _authorization and _ranges from app info (v2 behavior)
             const { _authorization, _ranges, ...appInfo } = changedApp;
             finalResponse = { ...responseRaw, _appInfo: appInfo };
+        }
+
+        // Add permission warning to response body if present (skip in private backend mode)
+        if (!isPrivateBackend()) {
+            const warning = getPermissionWarning(azureRequest);
+            if (warning && typeof finalResponse === "object" && finalResponse !== null) {
+                finalResponse = { ...finalResponse, warning };
+            }
         }
 
         let body: string | undefined = undefined;

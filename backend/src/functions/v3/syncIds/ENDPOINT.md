@@ -19,7 +19,7 @@ Replaces all existing ID consumptions for an app with the provided IDs.
 ### Headers
 | Header     | Type   | Required | Description                                       |
 |------------|--------|----------|---------------------------------------------------|
-| X-Auth-Key | string | Conditional | Required if the app is authorized              |
+| Ninja-Auth-Key | string | Conditional | Required if the app is authorized              |
 
 ### Request Body
 ```json
@@ -67,7 +67,7 @@ Merges the provided IDs with existing consumptions for an app. Existing IDs are 
 ### Headers
 | Header     | Type   | Required | Description                                       |
 |------------|--------|----------|---------------------------------------------------|
-| X-Auth-Key | string | Conditional | Required if the app is authorized              |
+| Ninja-Auth-Key | string | Conditional | Required if the app is authorized              |
 
 ### Request Body
 ```json

@@ -9,8 +9,8 @@ describe("bindUser", () => {
         method: "GET",
         headers: {
             get: jest.fn((name: string) => {
-                if (name === "X-User-Name") return userName;
-                if (name === "X-User-Email") return userEmail;
+                if (name === "Ninja-Git-Name") return userName;
+                if (name === "Ninja-Git-Email") return userEmail;
                 return null;
             }),
         } as any,
@@ -143,20 +143,20 @@ describe("bindUser", () => {
     });
 
     describe("header reading", () => {
-        it("should read X-User-Name header", () => {
+        it("should read Ninja-Git-Name header", () => {
             const request = createMockRequest("Test User", null);
 
             bindUser(request);
 
-            expect(request.headers.get).toHaveBeenCalledWith("X-User-Name");
+            expect(request.headers.get).toHaveBeenCalledWith("Ninja-Git-Name");
         });
 
-        it("should read X-User-Email header", () => {
+        it("should read Ninja-Git-Email header", () => {
             const request = createMockRequest(null, "test@example.com");
 
             bindUser(request);
 
-            expect(request.headers.get).toHaveBeenCalledWith("X-User-Email");
+            expect(request.headers.get).toHaveBeenCalledWith("Ninja-Git-Email");
         });
     });
 });

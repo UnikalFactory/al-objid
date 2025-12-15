@@ -7,8 +7,10 @@ import {
     skipAuthorization,
     appRequestMandatory,
 } from "../../../http";
+import { withPermissionCheck } from "../../../permission/withPermissionCheck";
 import { getSha256 } from "../../../utils";
 import { logAppEvent } from "../../../utils/logging";
+import { ActivityLogger } from "../../../activity";
 import { AppInfo } from "../../../types";
 import { createAuthorizeUpdateCallback, createDeauthorizeUpdateCallback } from "./updateCallbacks";
 import { AppCache } from "../../../cache";
@@ -26,9 +28,9 @@ interface AuthorizeAppResponse {
 }
 
 // GET - Check authorization status
-// authKey comes from X-Auth-Key header
+// authKey comes from Ninja-Auth-Key header
 const get: SingleAppHttpHandler<void, AuthorizeAppResponse> = async req => {
-    const authKey = req.headers.get("X-Auth-Key");
+    const authKey = req.headers.get("Ninja-Auth-Key");
 
     const result: AuthorizeAppResponse = {
         authorized: !!req.app?._authorization,
@@ -43,10 +45,20 @@ const get: SingleAppHttpHandler<void, AuthorizeAppResponse> = async req => {
 };
 
 // POST - Authorize an app
-// User name/email come from X-User-Name and X-User-Email headers (bound automatically)
+// User name/email come from Ninja-Git-Name and Ninja-Git-Email headers (bound automatically)
 const post: SingleAppHttpHandler<void, AuthorizeAppResponse> = async req => {
     const userName = req.user?.name || "";
     const userEmail = req.user?.email || "";
+
+    // Log activity (use Ninja-App-Id header, not req.appId which is the SHA256 hash)
+    const ninjaAppId = req.headers.get("Ninja-App-Id");
+    if (ninjaAppId) {
+        try {
+            await ActivityLogger.logActivity(ninjaAppId, userEmail, "authorizeApp");
+        } catch (err) {
+            console.error("Activity logging failed:", err);
+        }
+    }
 
     if (req.app?._authorization?.key) {
         throw new ErrorResponse(
@@ -72,9 +84,19 @@ const post: SingleAppHttpHandler<void, AuthorizeAppResponse> = async req => {
 };
 
 // DELETE - De-authorize an app
-// authKey comes from X-Auth-Key header
+// authKey comes from Ninja-Auth-Key header
 const del: SingleAppHttpHandler<void, AuthorizeAppResponse> = async req => {
-    const authKey = req.headers.get("X-Auth-Key");
+    const authKey = req.headers.get("Ninja-Auth-Key");
+
+    // Log activity (use Ninja-App-Id header, not req.appId which is the SHA256 hash)
+    const ninjaAppId = req.headers.get("Ninja-App-Id");
+    if (ninjaAppId) {
+        try {
+            await ActivityLogger.logActivity(ninjaAppId, req.user?.email || "", "deauthorizeApp");
+        } catch (err) {
+            console.error("Activity logging failed:", err);
+        }
+    }
 
     // Note: Auto-binding already ensures app exists, but we check authorization state
     if (!req.app._authorization?.key) {
@@ -116,6 +138,9 @@ appRequestMandatory(del);
 skipAuthorization(get);
 skipAuthorization(post);
 skipAuthorization(del);
+
+withPermissionCheck(post);
+withPermissionCheck(del);
 
 export const authorizeApp = createEndpoint({
     moniker: "v3-authorizeApp",

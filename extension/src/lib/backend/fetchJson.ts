@@ -1,3 +1,5 @@
+import { responseFilter } from "./responseFilter";
+
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 export async function fetchJson<T>(
@@ -15,16 +17,41 @@ export async function fetchJson<T>(
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
+    const text = await response.text();
+    let parsedBody: any = undefined;
+
+    // Try to parse body as JSON if it exists
+    if (text) {
+        try {
+            parsedBody = JSON.parse(text);
+        } catch {
+            // Not JSON, keep as undefined
+        }
+    }
+
+    // Call responseFilter for both success and error responses
+    // This ensures errors (like 403) are displayed even when response is not OK
+    if (parsedBody !== undefined) {
+        const shouldContinue = responseFilter(parsedBody, (headers ?? ({} as Record<string, string>))["Ninja-Git-Email"] ?? "");
+
+        // For success responses, if responseFilter indicates we should stop, throw an error to stop execution
+        if (response.ok && !shouldContinue) {
+            throw {
+                error: "Permission error detected",
+                statusCode: response.status,
+                headers: Object.fromEntries(response.headers.entries()),
+                permissionError: true,
+            };
+        }
+    }
+
     if (!response.ok) {
-        const errorBody = await response.text();
         throw {
-            error: errorBody,
+            error: text,
             statusCode: response.status,
             headers: Object.fromEntries(response.headers.entries()),
         };
     }
 
-    const text = await response.text();
-    return text ? JSON.parse(text) : undefined;
+    return parsedBody as T | undefined;
 }
-

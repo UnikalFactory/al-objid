@@ -28,7 +28,7 @@ export const LABELS = {
     BUTTON_SYNCHRONIZE: "Synchronize",
     BUTTON_LEARN_MORE: "Learn more",
     BUTTON_DONT_ASK: "Stop asking me for this VS Code session",
-    BUTTON_SHOW_RELEASE_NOTES: "What's New?",
+    BUTTON_SHOW_RELEASE_NOTES: "View release notes",
     BUTTON_DONT_SHOW_AGAIN: "Don't show again",
 
     SYNC_ARE_YOU_SURE: {

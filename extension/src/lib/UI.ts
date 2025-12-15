@@ -4,8 +4,73 @@ import { NinjaALRange } from "./types/NinjaALRange";
 import { CONFIG_FILE_NAME, EXTENSION_NAME, LABELS } from "./constants";
 import { EventLogEntry } from "./types/EventLogEntry";
 import { ALApp } from "./ALApp";
+import { formatTimeRemaining, PermissionWarning, PermissionError, PermissionWarningCode } from "./backend/responseFilter";
+
+/**
+ * Tracks which permission warnings have been shown this session.
+ * Warnings are only shown once per VS Code session to avoid spamming the user.
+ */
+const shownWarnings = new Set<PermissionWarningCode>();
 
 // TODO All "learn more" messages should wrap their learn more action to reduce complexity of consumers
+
+/**
+ * Get the user-friendly warning message for a permission warning.
+ * Per specification section 8.2, the frontend controls these messages.
+ */
+function getWarningMessage(warning: PermissionWarning, gitEmail: string): string {
+    switch (warning.code) {
+        case "APP_GRACE_PERIOD":
+            return (
+                `This app's trial period expires in ${formatTimeRemaining(warning.timeRemaining!)}. ` +
+                `Register it with your Ninja subscription to continue using Ninja after the trial.`
+            );
+        case "ORG_GRACE_PERIOD":
+            return (
+                `Your Git email (${gitEmail}) hasn't been added to your organization yet. ` +
+                `Ask your team administrator to add you as an authorized user. ` +
+                `(This warning will become an error in ${formatTimeRemaining(warning.timeRemaining!)})`
+            );
+        default:
+            return `Warning: ${warning.code}`;
+    }
+}
+
+/**
+ * Get the user-friendly error message for a permission error.
+ * Per specification section 8.2, the frontend controls these messages.
+ */
+function getErrorMessage(error: PermissionError, gitEmail: string): string {
+    switch (error.code) {
+        case "GRACE_EXPIRED":
+            return (
+                `This app's 5-day trial period has ended. ` +
+                `Register it with your Ninja subscription to continue assigning object IDs.`
+            );
+        case "USER_NOT_AUTHORIZED":
+            return (
+                `Your Git email (${gitEmail}) is not authorized to use Ninja for this app. ` +
+                `Ask your team administrator to add you as an authorized user.`
+            );
+        case "ORG_FLAGGED":
+            return (
+                `Your organization's Ninja subscription has been suspended. ` +
+                `Contact your administrator or Ninja support.`
+            );
+        case "SUBSCRIPTION_CANCELLED":
+            return (
+                `Your organization's Ninja subscription has been cancelled. ` +
+                `Renew your subscription to continue using Ninja.`
+            );
+        case "PAYMENT_FAILED":
+            return (
+                `Your organization's payment has failed. ` +
+                `Update your payment method to continue using Ninja.`
+            );
+        default:
+            return `Error: ${error.code}`;
+    }
+}
 
 const CONSTANTS = {
     BACKEND: {
@@ -34,7 +99,7 @@ export const UI = {
         showNoWorkspacesOpenInfo: () => window.showInformationMessage("There are no AL folders open. Nothing to do."),
         showReleaseNotes: (version: string) =>
             window.showInformationMessage(
-                `AL Object ID Ninja has been updated to version ${version}.`,
+                `AL Object ID Ninja has just been upgraded to version ${version}.`,
                 LABELS.BUTTON_SHOW_RELEASE_NOTES
             ),
         showReleaseNotesNotAvailable: (version: string) =>
@@ -327,6 +392,64 @@ export const UI = {
             }
             Output.instance.log(message, LogLevel.Info);
             window.showInformationMessage(message);
+        },
+    },
+
+    permission: {
+        /**
+         * Convert a permission code to a kebab-case URL slug.
+         * E.g., "APP_GRACE_PERIOD" → "app-grace-period"
+         */
+        getHelpUrl: (code: string) => {
+            const slug = code.toLowerCase().replace(/_/g, "-");
+            return `https://alid.ninja/help/${slug}`;
+        },
+
+        /**
+         * Show a permission warning to the user.
+         * Warnings don't block functionality but inform the user of upcoming issues.
+         * Each warning code is only shown once per VS Code session.
+         *
+         * Per specification section 8.2, the frontend controls the user-friendly messages.
+         */
+        showWarning: (warning: PermissionWarning, gitEmail: string) => {
+            // Only show each warning code once per session
+            if (shownWarnings.has(warning.code)) {
+                return;
+            }
+            shownWarnings.add(warning.code);
+
+            const message = getWarningMessage(warning, gitEmail);
+
+            window
+                .showWarningMessage(message, LABELS.BUTTON_LEARN_MORE)
+                .then(selection => {
+                    if (selection === LABELS.BUTTON_LEARN_MORE) {
+                        import("vscode").then(vscode => {
+                            vscode.env.openExternal(vscode.Uri.parse(UI.permission.getHelpUrl(warning.code)));
+                        });
+                    }
+                });
+        },
+
+        /**
+         * Show a permission error to the user.
+         * Errors indicate that the operation cannot proceed.
+         *
+         * Per specification section 8.2, the frontend controls the user-friendly messages.
+         */
+        showError: (error: PermissionError, gitEmail: string) => {
+            const message = getErrorMessage(error, gitEmail);
+
+            window
+                .showErrorMessage(message, LABELS.BUTTON_LEARN_MORE)
+                .then(selection => {
+                    if (selection === LABELS.BUTTON_LEARN_MORE) {
+                        import("vscode").then(vscode => {
+                            vscode.env.openExternal(vscode.Uri.parse(UI.permission.getHelpUrl(error.code)));
+                        });
+                    }
+                });
         },
     },
 };

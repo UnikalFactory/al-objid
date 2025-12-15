@@ -18,6 +18,7 @@ import { handleHttpErrorDefault } from "./handleHttpErrorDefault";
 import { ALAppManifest } from "../ALAppManifest";
 import { GitUserCache } from "./GitUserCache";
 
+
 /**
  * Sends a request to the back-end API.
  *
@@ -26,7 +27,7 @@ import { GitUserCache } from "./GitUserCache";
  * @param data Data to send to the back-end endpoint
  * @param errorHandler Error handler to execute in case of unsuccessful request
  * @param endpoint Optional endpoint configuration (defaults to HttpEndpoints.default)
- * @param authKey Optional authorization key to send as X-Auth-Key header
+ * @param authKey Optional authorization key to send as Ninja-Auth-Key header
  * @param manifest Optional ALAppManifest for git user info lookup
  * @template T Type of response object expected from the back end
  * @returns `HttpResponse` object that contains full information about response, error, and error handling status
@@ -48,14 +49,19 @@ export async function sendRequest<T>(
         headers["X-Functions-Key"] = key;
     }
     if (authKey) {
-        headers["X-Auth-Key"] = authKey;
+        headers["Ninja-Auth-Key"] = authKey;
     }
 
     // Add git user headers
     const gitUser = await GitUserCache.instance.getUserInfo(manifest);
     if (gitUser.name || gitUser.email) {
-        headers["X-User-Name"] = gitUser.name;
-        headers["X-User-Email"] = gitUser.email;
+        headers["Ninja-Git-Name"] = gitUser.name;
+        headers["Ninja-Git-Email"] = gitUser.email;
+    }
+
+    // Add app identification headers
+    if (manifest?.id) {
+        headers["Ninja-App-Id"] = manifest.id;
     }
 
     const url = `https://${hostname}${path}`;
@@ -92,6 +98,12 @@ export async function sendRequest<T>(
                 }
             }
         } catch (error: any) {
+            // Handle permission errors detected by responseFilter in fetchJson
+            if (error.permissionError) {
+                response.error = error;
+                response.status = API_RESULT.ERROR_HANDLED;
+                return response;
+            }
             if (preprocessHttpStatusError(error)) {
                 response.error = error;
                 response.status = API_RESULT.ERROR_HANDLED;

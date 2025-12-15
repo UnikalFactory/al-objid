@@ -19,7 +19,7 @@ Retrieves the current authorization status of an app.
 ### Headers
 | Header     | Type   | Required | Description                                       |
 |------------|--------|----------|---------------------------------------------------|
-| X-Auth-Key | string | No       | If provided, response includes key validity check |
+| Ninja-Auth-Key | string | No       | If provided, response includes key validity check |
 
 ### Request Body
 None
@@ -37,7 +37,7 @@ None
 }
 ```
 - `authorized` - Whether the app has authorization enabled
-- `valid` - Only present if X-Auth-Key was provided; true if key matches
+- `valid` - Only present if Ninja-Auth-Key was provided; true if key matches
 - `user` - User who authorized the app, or null if no user info was stored
 
 ### Errors
@@ -100,7 +100,7 @@ Removes authorization from an app, allowing unrestricted modifications.
 ### Headers
 | Header     | Type   | Required | Description                                            |
 |------------|--------|----------|--------------------------------------------------------|
-| X-Auth-Key | string | Yes      | The authorization key returned when app was authorized |
+| Ninja-Auth-Key | string | Yes      | The authorization key returned when app was authorized |
 
 ### Request Body
 None

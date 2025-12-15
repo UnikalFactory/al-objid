@@ -1,5 +1,7 @@
 # Deploying a Self-Maintained Back End
 
+**Last change**: December 14, 2025
+
 AL Object ID Ninja uses a public API to manage object IDs. While this API is deployed on Microsoft Azure
 infrastructure and uses secure HTTPS communication, you may prefer using your own Azure subscription and
 your own resources.
@@ -49,9 +51,37 @@ When creating the Function App (or configuring your deployment template), use:
 
 Your choice of operating system is entirely up to you. The app can run on Windows or Linux.
 
+### Environment Variables
+
+The back-end requires the following environment variables to be configured.
+
+| Variable          | Value  | Usage notes                   |
+| ----------------- | ------ | ----------------------------- |
+| `PRIVATE_BACKEND` | `true` | Case-insensitive feature flag |
+
+#### `PRIVATE_BACKEND` Flag
+
+When running the back-end on your own infrastructure, you must set this flag to skip commercial platform checks that are not needed in a private deployment.
+
+**What it does**: When set to `true`, the back-end will skip checks such as:
+- App assignment validation (whether apps are assigned to your account)
+- User authorization checks (whether users are allowed to assign numbers)
+- Consumption counting
+- Orphan app management
+
 ## Storage
 
 This back end requires **one Azure Storage account** for Blob storage.
+
+There are three containers you must create:
+
+| Container | Purpose                                                                  |
+| --------- | ------------------------------------------------------------------------ |
+| `apps`    | Stores app and pool consumption information                              |
+| `logs`    | Stores logs and details for the Range Explorer feature and notifications |
+| `system`  | System-level blobs, caches, and similar                                  |
+
+> The `system` container should actually not be needed by self-hosted instances. This container keeps track of information relevant for the public commercial back-end infrastructure to work correctly. However, to avoid accidental bugs due to container not being present, it's best to just create this container. Better safe than sorry, they say.
 
 ## Configuring the Azure Functions app
 
@@ -76,3 +106,10 @@ Once your back end is deployed, configure AL Object ID Ninja to use your own bac
 When configuring the host name, do not use the full URL. For example, if your function app endpoint is
 `https://example.azurewebsites.net/`, set `example.azurewebsites.net` as the `objectIdNinja.backEndUrl`
 configuration value.
+
+# Change Log
+
+### December 14, 2025
+
+Added `PRIVATE_BACKEND` configuration flag section.
+Added description of containers necessary for correct operation.

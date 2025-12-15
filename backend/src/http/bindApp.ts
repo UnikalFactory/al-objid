@@ -28,7 +28,7 @@ export async function bindSingleApp(
     AppCache.set(appId, app);
 
     if (!skipAuth) {
-        const authKey = azureRequest.headers.get("X-Auth-Key");
+        const authKey = azureRequest.headers.get("Ninja-Auth-Key");
         checkAuthorization(app, authKey);
     }
 
@@ -98,7 +98,7 @@ export async function bindSingleAppOptional(
     AppCache.set(appId, app);
 
     if (!skipAuth) {
-        const authKey = azureRequest.headers.get("X-Auth-Key");
+        const authKey = azureRequest.headers.get("Ninja-Auth-Key");
         checkAuthorization(app, authKey);
     }
 

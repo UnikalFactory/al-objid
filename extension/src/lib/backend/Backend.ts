@@ -25,6 +25,7 @@ import { PropertyBag } from "../types/PropertyBag";
 export class Backend {
     private static readonly _knownManagedAppsPromises: PropertyBag<Promise<boolean> | undefined> = {};
     private static readonly _knownManagedApps: PropertyBag<boolean | undefined> = {};
+    private static readonly _touchedAppsThisSession: Set<string> = new Set();
 
     /**
      * Checks if an app is a known managed app. A managed app is an app that Ninja's back end is aware of and Ninja
@@ -355,5 +356,47 @@ export class Backend {
             undefined,
             app ? WorkspaceManager.instance.getALAppFromHash(app)?.manifest : undefined
         );
+    }
+
+    /**
+     * Send touch request for the given apps.
+     * Only sends for apps not yet touched in this VS Code session.
+     * Fire-and-forget pattern - doesn't block UI.
+     */
+    public static async touch(apps: ALApp[], feature: string): Promise<void> {
+        if (apps.length === 0) {
+            return;
+        }
+
+        // Filter out already-touched apps
+        const untouchedApps = apps.filter(app => !this._touchedAppsThisSession.has(app.hash));
+
+        if (untouchedApps.length === 0) {
+            return; // All apps already touched this session
+        }
+
+        // Mark as touched BEFORE sending request (optimistic)
+        for (const app of untouchedApps) {
+            this._touchedAppsThisSession.add(app.hash);
+        }
+
+        // Extract app IDs (real GUIDs, not hashes)
+        const appIds = untouchedApps.map(app => app.manifest.id);
+
+        try {
+            // Use sendRequest with first app's manifest for headers
+            await sendRequest<undefined>(
+                "/api/v3/touch",
+                "POST",
+                { apps: appIds, feature },
+                async () => true,  // Silent error handler
+                HttpEndpoints.default,
+                undefined,  // No auth key needed
+                untouchedApps[0]?.manifest  // Use first app's manifest for git headers
+            );
+        } catch (err) {
+            // Silently handle errors - logging failures shouldn't impact UX
+            console.error("Touch request failed:", err);
+        }
     }
 }

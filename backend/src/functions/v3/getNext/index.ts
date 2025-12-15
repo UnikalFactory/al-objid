@@ -1,7 +1,9 @@
 import { Blob } from "@vjeko.com/azure-blob";
 import { SingleAppHttpHandler, createEndpoint, validate, ErrorResponse, HttpStatusCode, optional, array, appRequestOptional } from "../../../http";
+import { withPermissionCheck } from "../../../permission/withPermissionCheck";
 import { findFirstAvailableId, findAvailablePerRange, validateALObjectType } from "../../../utils";
 import { logAppEvent } from "../../../utils/logging";
+import { ActivityLogger } from "../../../activity";
 import { AppInfo, Range } from "../../../types";
 import { createGetNextUpdateCallback, ConsumptionUpdateContext } from "./updateCallbacks";
 import { AppCache } from "../../../cache";
@@ -90,6 +92,21 @@ const post: SingleAppHttpHandler<GetNextRequest, GetNextResponse> = async (req) 
     const { type, perRange, require, commit } = req.body;
     const bodyRanges = req.body.ranges;
 
+    // Determine feature for activity logging
+    const feature = commit ? "getNext_commit" : "getNext_check";
+
+    // Log activity (use Ninja-App-Id header, not req.appId which is the SHA256 hash)
+    const ninjaAppId = req.headers.get("Ninja-App-Id");
+    if (ninjaAppId) {
+        try {
+            await ActivityLogger.logActivity(ninjaAppId, req.user?.email || "", feature);
+        } catch (err) {
+            console.error("Activity logging failed:", err);
+        }
+    }
+
+    // TODO If the app is unknown, we should respond immediately with 404, we should not go further. The front end should interpret this correctly and it should not depend on `hasConsumption` flag for anything
+
     const appInfo = req.app || {} as AppInfo;
     const hasConsumption = !!req.app;
 
@@ -151,6 +168,7 @@ validate(post, {
 });
 
 appRequestOptional(post);
+withPermissionCheck(post);
 
 export const getNext = createEndpoint({
     moniker: "v3-getNext",
