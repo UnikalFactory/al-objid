@@ -24,6 +24,7 @@ export enum TelemetryEventType {
     RefuseNinja = "refuseNinja",
     LearnAboutNinja = "learnAboutNinja",
     OpenExternal = "openExternal",
+    UniqueUser = "uniqueUser",
 }
 
 export class Telemetry {
