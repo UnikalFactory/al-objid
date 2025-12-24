@@ -1,4 +1,4 @@
-# .github/workflows/deploy-backend.yml
+
 name: Deploy Ninja Backend (Node 22, Publish Profile)
 
 on:
@@ -7,15 +7,15 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: "activealobjectninja"      # tu Function App
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: "backend"          # solo carpeta backend
+  AZURE_FUNCTIONAPP_NAME: "activealobjectninja"
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "backend"
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (monorepo completo)
+      - name: Checkout monorepo
         uses: actions/checkout@v4
 
       - name: Setup Node.js 22.x (LTS)
@@ -24,9 +24,7 @@ jobs:
           node-version: "22.x"
           cache: "npm"
           cache-dependency-path: |
-            ${{
-              env.AZURE_FUNCTIONAPP_PACKAGE_PATH
-            }}/package-lock.json
+            ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/package-lock.json
 
       - name: Install deps & build (backend)
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
@@ -44,3 +42,4 @@ jobs:
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: backend.zip
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
